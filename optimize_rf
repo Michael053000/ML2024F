@@ -1,0 +1,80 @@
+import pandas as pd
+from sklearn.model_selection import GridSearchCV
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import roc_auc_score
+
+# Load the datasets
+train_data = pd.read_csv("train_final.csv")
+test_data = pd.read_csv("test_final.csv")
+
+# Split train data into features and target
+X = train_data.drop(columns=["income>50K"])
+y = train_data["income>50K"]
+
+# Identify categorical and numerical columns
+categorical_cols = X.select_dtypes(include=["object"]).columns
+numerical_cols = X.select_dtypes(include=["int64", "float64"]).columns
+
+# Preprocessing for numerical and categorical data
+numerical_transformer = SimpleImputer(strategy="mean")
+categorical_transformer = Pipeline(steps=[
+    ("imputer", SimpleImputer(strategy="most_frequent")),
+    ("onehot", OneHotEncoder(handle_unknown="ignore"))
+])
+
+# Combine preprocessing
+preprocessor = ColumnTransformer(
+    transformers=[
+        ("num", numerical_transformer, numerical_cols),
+        ("cat", categorical_transformer, categorical_cols)
+    ]
+)
+
+# Define a pipeline with Random Forest
+rf_pipeline = Pipeline(steps=[
+    ("preprocessor", preprocessor),
+    ("classifier", RandomForestClassifier(random_state=42))
+])
+
+# Define a detailed hyperparameter grid
+rf_param_grid = {
+    "classifier__n_estimators": [100, 200, 300],
+    "classifier__max_depth": [10, 20, None],
+    "classifier__min_samples_split": [2, 5, 10],
+    "classifier__min_samples_leaf": [1, 2, 4]
+}
+
+# Perform GridSearchCV for hyperparameter tuning
+rf_grid_search = GridSearchCV(
+    estimator=rf_pipeline,
+    param_grid=rf_param_grid,
+    scoring="roc_auc",
+    cv=5,
+    n_jobs=-1,
+    verbose=1
+)
+
+# Train the model with GridSearchCV
+rf_grid_search.fit(X, y)
+
+# Evaluate the best model
+best_rf_model = rf_grid_search.best_estimator_
+print("Best parameters:", rf_grid_search.best_params_)
+
+# Predict probabilities for the test dataset
+test_ids = test_data["ID"]
+test_predictions = best_rf_model.predict_proba(test_data)[:, 1]
+
+# Create the submission DataFrame
+submission = pd.DataFrame({
+    "ID": test_ids,
+    "Prediction": test_predictions
+})
+
+# Save the submission file
+submission.to_csv("optimized_submission.csv", index=False)
+print("Submission file saved as optimized_submission.csv")
