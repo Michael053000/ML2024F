@@ -17,10 +17,4 @@ This project predicts whether a resident's yearly income exceeds $50,000 based o
 - Final AUC-ROC: 0.92731 (private score).
 
 ### Getting Started
-1. Install dependencies: `pip install -r requirements.txt`
-2. Run preprocessing: `python scripts/preprocess_data.py`
-3. Train models: `python scripts/train_model.py`
-4. Evaluate models: `python scripts/evaluate_model.py`
-
-### References
-- Ron Kohavi, "Scaling Up the Accuracy of Naive-Bayes Classifiers: a Decision-Tree Hybrid", Proceedings of the Second International Conference on Knowledge Discovery and Data Mining, 1996.
+Install library: `pip install pandas scikit-learn xgboost lightgbm numpy matplotlib seaborn`
